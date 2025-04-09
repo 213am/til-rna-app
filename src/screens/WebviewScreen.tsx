@@ -76,8 +76,8 @@ const WebViewScreen = (): JSX.Element => {
                         // 웹페이지에서 카운트 데이터 처리
                         console.log('Count updated : ', data.payload.count)
                     }
-                } catch (e) { 
-                 console.log(e)
+                } catch (error) { 
+                 console.log(error)
                 }
             });
             true;
