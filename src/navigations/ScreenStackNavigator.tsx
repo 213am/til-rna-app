@@ -1,7 +1,8 @@
-import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import HomeScreen from '../screens/HomeScreen';
+import React from 'react';
 import AboutScreen from '../screens/AboutScreen';
+import HomeScreen from '../screens/HomeScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 import WebviewScreen from '../screens/WebviewScreen';
 
 const ScreenStackNavigator = () => {
@@ -13,6 +14,7 @@ const ScreenStackNavigator = () => {
       <Stack.Screen name="home" component={HomeScreen} />
       <Stack.Screen name="about" component={AboutScreen} />
       <Stack.Screen name="webview" component={WebviewScreen} />
+      <Stack.Screen name="profile" component={ProfileScreen} />
     </Stack.Navigator>
   );
 };
