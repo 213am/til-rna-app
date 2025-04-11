@@ -14,7 +14,7 @@ const HomeScreen = ({navigation}: {navigation: any}): JSX.Element => {
           onPress={() => navigation.navigate('webview')}
         />
         <Button
-          title={'profile 로 이동'}
+          title={'Profile 로 이동'}
           onPress={() => navigation.navigate('profile')}
         />
       </View>
