@@ -87,7 +87,9 @@ const ProfileScreen = () => {
         console.log('저장 중 에러 발생 : ', error);
       }
     };
-    saveTask();
+    if (tasks.length > 0) {
+      saveTask();
+    }
   }, [tasks]);
 
   // 데이터는 마운트 시 불러오기
