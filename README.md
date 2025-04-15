@@ -1,41 +1,35 @@
-# Navigator
+# Deploy
 
-- 네비게이션 (라우터 처럼 생각하기)
+## 1. Splash Screen (시작화면)
 
-- https://reactnavigation.org/docs/getting-started
-- https://reactnative.dev/docs/navigation
-  - 위의 내용으로는 어려움이 있습니다.
-- [참조](https://velog.io/@slobber/React-native-navigation-%EC%9D%B4%EC%9A%A9%ED%95%98%EC%97%AC-%EA%B0%9C%EB%B0%9C%ED%95%98%EA%B8%B0)
+- https://til-choonham.tistory.com/530
+- https://github.com/crazycodeboy/react-native-splash-screen
+- https://www.npmjs.com/package/react-native-splash-screen
 
-## 1. 환경 셋팅
+```bash
+npm i react-native-splash-screen
+```
 
-- https://reactnavigation.org/
-- https://reactnavigation.org/docs/stack-navigator
+### 1.1. andorid (MainActivity.java) 수정
 
-  - `npm install @react-navigation/native@6.1.18`
-  - `npm install @react-navigation/stack@6.4.1`
-  - `npm install @react-native-masked-view/masked-view@0.3.1`
-  - `npm install react-native-gesture-handler@2.20.0`
-  - `npm install react-native-safe-area-context@4.11.0`
-  - `npm install react-native-screens@3.34.0`
-
-## 2. MainActivity.java 수정
-
-- `android/app/src/main/java/com/프로젝트명/MainActivity.java` 수정
-- 샘플 work 프로젝트
-  - `android/app/src/main/java/com/tilapp/MainActivity.java` 수정
+- android/app/src/main/java/com/앱이름/MainActivity.java
+- 아래 소스는 참조만 하고 추가된 소스만 별도로 작성
 
 ```java
-package com.work;
+package com.rntil;
 
+// 추가된 소스
+import android.os.Bundle; // here
 
 import com.facebook.react.ReactActivity;
-// 추가
-import android.os.Bundle;
-
 import com.facebook.react.ReactActivityDelegate;
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint;
 import com.facebook.react.defaults.DefaultReactActivityDelegate;
+
+// 추가된 소스
+// react-native-splash-screen >= 0.3.1
+import org.devio.rn.splashscreen.SplashScreen; // here
+
 
 public class MainActivity extends ReactActivity {
 
@@ -45,7 +39,7 @@ public class MainActivity extends ReactActivity {
    */
   @Override
   protected String getMainComponentName() {
-    return "work";
+    return "rntil";
   }
 
   /**
@@ -62,57 +56,81 @@ public class MainActivity extends ReactActivity {
         DefaultNewArchitectureEntryPoint.getFabricEnabled());
   }
 
-// 추가
+  // 추가된 소스
   @Override
   protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(null);
+      SplashScreen.show(this);  // here
+      super.onCreate(savedInstanceState);
   }
+
 }
 ```
 
-## 3. Screen 구성
+### 1.2. splash screen 용 이미지 필요
 
-- `/src/screens/HomeScreen.tsx` 수정
+- `900 * 900` : png 파일 추천
+- launch_screen.png
+- android/app/src/main/res/drawable/ 저장
+- android/app/src/main/res/drawable/launch_screen.png
 
-```tsx
-import React from 'react';
-import {Button, SafeAreaView, StyleSheet, View} from 'react-native';
+### 1.3. launch_screen.xml 파일 생성 및 배치
 
-const HomeScreen = ({navigation}: {navigation: any}): JSX.Element => {
-  return (
-    <SafeAreaView style={styles.container}>
-      <View>
-        <Button
-          title={'상세화면으로 이동'}
-          onPress={() => navigation.navigate('Details')}
-        />
-      </View>
-    </SafeAreaView>
-  );
-};
+- android/app/src/main/res/layout 폴더 생성
+- android/app/src/main/res/layout/launch_screen.xml 파일 생성
 
-// css
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
-
-export default HomeScreen;
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/launch_screen" android:scaleType="centerCrop" />
+</RelativeLayout>
 ```
 
-- `/src/screens/DetailScreen.tsx` 파일 생성
+### 1.4. colors.xml 파일 생성 및 배치
+
+- android/app/src/main/res/values/colors.xml
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary_dark">#000000</color>
+</resources>
+```
+
+### 1.5. App.tsx 에 적용
 
 ```tsx
 import React from 'react';
-import {SafeAreaView, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, SafeAreaView, StyleSheet, View} from 'react-native';
+import SplashScreen from 'react-native-splash-screen';
+import WebView from 'react-native-webview';
 
-const DetailScreen = (): JSX.Element => {
+const App = (): JSX.Element => {
+  const webViewUrl = 'https://app-fish-y3pa.vercel.app';
+
+  // SafeAreaView 는 기기의 indicator 영역을 제외한 컨텐츠 영역 배치
   return (
     <SafeAreaView style={styles.container}>
-      <View>
-        <Text>DetailScreen</Text>
-      </View>
+      <WebView
+        source={{uri: webViewUrl}} // 웹뷰에 보여줄 URL 주소
+        startInLoadingState={true} // 웹뷰가 로딩 인디케이터 표시
+        renderLoading={() => (
+          // 웹뷰 로딩 중일 때 표시될 로딩 인디케이터 컴포넌트
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#0000ff" />
+            {/* 로딩 스피너 컴포넌트 */}
+          </View>
+        )}
+        // 로딩 완료
+        onLoadEnd={() => {
+          console.log('로딩완료');
+          setTimeout(() => {
+            SplashScreen.hide();
+          }, 1000);
+        }}
+        style={styles.webview}
+      />
     </SafeAreaView>
   );
 };
@@ -120,774 +138,381 @@ const DetailScreen = (): JSX.Element => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000',
+  },
+  webview: {
+    flex: 1,
+  },
+  loadingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
 });
-
-export default DetailScreen;
-```
-
-## 4. Navigation 연결하기
-
-- `/App.tsx` 에서 연결
-
-### 4.1. 단계 1.
-
-```tsx
-import {NavigationContainer} from '@react-navigation/native';
-import React from 'react';
-
-const App = (): JSX.Element => {
-  return <NavigationContainer></NavigationContainer>;
-};
-
 export default App;
 ```
 
-### 4.2. 단계 2.
+## 2. Icon
+
+### 2.1. 아이콘을 생성해 주는 서비스
+
+- https://icon.kitchen/
+- https://www.appicon.co/
+
+### 2.2. 배치
+
+- android/app/src/main/res 폴더에 붙여넣기
+  ![Image](https://github.com/user-attachments/assets/6b4b8d7f-9a8a-4347-90f6-f9ea37f78ee4)
+
+## 3. Back키 처리
+
+- App.tsx
 
 ```tsx
-import React from 'react';
-import {NavigationContainer} from '@react-navigation/native';
-import {createStackNavigator} from '@react-navigation/stack';
-
-const Stack = createStackNavigator();
+import React, {useEffect} from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  BackHandler,
+  SafeAreaView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import SplashScreen from 'react-native-splash-screen';
+import WebView from 'react-native-webview';
 
 const App = (): JSX.Element => {
-  return <NavigationContainer></NavigationContainer>;
-};
-export default App;
-```
+  const webViewUrl = 'https://app-fish-y3pa.vercel.app';
 
-### 4.3. 단계 3.
+  // back 키 처리
+  useEffect(() => {
+    const backAction = () => {
+      Alert.alert('앱 종료', '앱을 종료하시겠습니까?', [
+        {text: '취소', onPress: () => null, style: 'cancel'},
+        {text: '종료', onPress: () => BackHandler.exitApp()},
+      ]);
+      return true; // 기본 뒤로가기 방지
+    };
 
-```tsx
-import React from 'react';
-import {NavigationContainer} from '@react-navigation/native';
-import {createStackNavigator} from '@react-navigation/stack';
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction,
+    );
 
-const Stack = createStackNavigator();
+    return () => backHandler.remove(); // 앱 종료시 이벤트 리스너 정리
+  }, []);
 
-const App = (): JSX.Element => {
-  return (
-    <NavigationContainer>
-      <Stack.Navigator></Stack.Navigator>
-    </NavigationContainer>
-  );
-};
-export default App;
-```
-
-### 4.4. 단계 4.
-
-- 현재 screen 을 2개로 구성했으므로 ` <Stack.Screen />` 를 2개 작성
-
-```tsx
-import React from 'react';
-import {NavigationContainer} from '@react-navigation/native';
-import {createStackNavigator} from '@react-navigation/stack';
-
-const Stack = createStackNavigator();
-
-const App = (): JSX.Element => {
-  return (
-    <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen />
-        <Stack.Screen />
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
-};
-export default App;
-```
-
-### 4.5. 단계 5. 옵션
-
-```tsx
-import React from 'react';
-import {NavigationContainer} from '@react-navigation/native';
-import {createStackNavigator} from '@react-navigation/stack';
-import HomeScreen from './src/screens/HomeScreen';
-import DetailScreen from './src/screens/DetailScreen';
-
-const Stack = createStackNavigator();
-
-const App = (): JSX.Element => {
-  return (
-    <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Details" component={DetailScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
-};
-export default App;
-```
-
-<br/>
-
-## 5. Stack Navigation 옵션
-
-- Stack 은 화면을 쌓아서 보여줌
-- Stack.Screen 은 각각의 화면을 말함
-
-### 5.1. title
-
-```tsx
-  <Stack.Screen
-    name="Home"
-    component={HomeScreen}
-    options={{title: '홈 화면'}}
-  />
-  <Stack.Screen
-    name="Details"
-    component={DetailScreen}
-    options={{title: '상세화면'}}
-  />
-```
-
-### 5.2. headerStyle, headerTintColor
-
-- 상단바의 색상 및 글자 색상 설정
-
-```tsx
-    <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{
-            title: '홈 화면',
-            headerStyle: {backgroundColor: 'skyblue'},
-            headerTintColor: '#fff',
-          }}
-        />
-        <Stack.Screen
-          name="Details"
-          component={DetailScreen}
-          options={{
-            title: '상세화면',
-            headerStyle: {backgroundColor: 'skyblue'},
-            headerTintColor: '#fff',
-          }}
-        />
-```
-
-### 5.3. headerTitleAlign
-
-- 제목 정렬
-
-```tsx
-  <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{
-            title: '홈 화면',
-            headerStyle: {backgroundColor: 'skyblue'},
-            headerTintColor: '#fff',
-            headerTitleAlign: 'center',
-          }}
-        />
-        <Stack.Screen
-          name="Details"
-          component={DetailScreen}
-          options={{
-            title: '상세화면',
-            headerStyle: {backgroundColor: 'skyblue'},
-            headerTintColor: '#fff',
-            headerTitleAlign: 'left',
-          }}
-        />
-```
-
-### 5.4. headerShown
-
-- 제목을 숨길지 아닐지
-
-```tsx
-        <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{
-            title: '홈 화면',
-            headerStyle: {backgroundColor: 'skyblue'},
-            headerTintColor: '#fff',
-            headerTitleAlign: 'left',
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="Details"
-          component={DetailScreen}
-          options={{
-            title: '상세화면',
-            headerStyle: {backgroundColor: 'skyblue'},
-            headerTintColor: '#fff',
-            headerTitleAlign: 'left',
-            headerShown: true,
-          }}
-        />
-```
-
-### 5.5. gestureEnabled
-
-- 제스처로 이동하기 활성화/비활성화
-
-```tsx
-<Stack.Screen
-  name="Details"
-  component={DetailScreen}
-  options={{
-    title: '상세화면',
-    headerStyle: {backgroundColor: 'skyblue'},
-    headerTintColor: '#fff',
-    headerTitleAlign: 'left',
-    headerShown: true,
-    gestureEnabled: true,
-  }}
-/>
-```
-
-### 5.6. animation
-
-- 화면 전환 애니메이션
-  >
-- animationEnabled: true,
-- animationTypeForReplace: 'push',
-
-  - "push": 새 스크린을 추가하는 애니메이션처럼 보임 (앞으로 이동)
-
-  - "pop": 이전 스크린으로 돌아가는 애니메이션처럼 보임 (뒤로 이동)
-
-```tsx
-<Stack.Screen
-  name="Details"
-  component={DetailScreen}
-  options={{
-    title: '상세화면',
-    headerStyle: {backgroundColor: 'skyblue'},
-    headerTintColor: '#fff',
-    headerTitleAlign: 'left',
-    headerShown: true,
-    gestureEnabled: true,
-    animationEnabled: true,
-    animationTypeForReplace: 'push',
-  }}
-/>
-```
-
-### 5.7. headerRight, headerLeft
-
-- 버튼 만들기
-
-```tsx
-<Stack.Screen
-  name="Details"
-  component={DetailScreen}
-  options={{
-    title: '상세 화면',
-    headerStyle: {backgroundColor: 'hotpink'},
-    headerTintColor: '#fff',
-    headerTitleAlign: 'left',
-    headerShown: true,
-    gestureEnabled: true,
-    animationEnabled: true,
-    animationTypeForReplace: 'push',
-    headerRight: () => (
-      <Button
-        title="Info"
-        color={'blue'}
-        onPress={() => Alert.alert('안녕')}
-      />
-    ),
-    headerLeft: () => (
-      <Button
-        title="Info2"
-        color={'red'}
-        onPress={() => Alert.alert('반가워')}
-      />
-    ),
-  }}
-```
-
-- headerLeft 버튼 선택 시 화면(Screen) 이동하기
-
-```tsx
-<Stack.Screen
-  name="Details"
-  component={DetailScreen}
-  options={({navigation}) => ({
-    title: '상세화면',
-    headerStyle: {backgroundColor: 'pink'},
-    headerTintColor: '#fff',
-    headerTitleAlign: 'center',
-    headerLeft: () => (
-      <Button
-        title="뒤로가기"
-        color={'orange'}
-        onPress={() => navigation.goBack()}
-      />
-    ),
-  })}
-/>
-```
-
-- headerRight 버튼 선택 시 화면(Screen) 에 데이터 전달하기
-
-```tsx
-<Stack.Screen
-  name="Home"
-  component={HomeScreen}
-  options={({navigation}) => ({
-    title: '홈 화면',
-    headerStyle: {backgroundColor: 'skyblue'},
-    headerTintColor: '#fff',
-    headerTitleAlign: 'center',
-    headerShown: true,
-    headerRight: () => (
-      <Button
-        title="데이터전달하기"
-        color={'blue'}
-        onPress={() => navigation.navigate('Details', {userId: 1})}
-      />
-    ),
-  })}
-/>
-```
-
-```tsx
-import {RouteProp, useRoute} from '@react-navigation/native';
-import React from 'react';
-import {SafeAreaView, StyleSheet, Text, View} from 'react-native';
-
-// route 에 추가적으로 우리가 만든 prop 전달하기
-type RootStackParamList = {
-  Details: {userId: number};
-};
-type DetailRouteProp = RouteProp<RootStackParamList, 'Details'>;
-
-const DetailScreen = () => {
-  const route = useRoute<DetailRouteProp>();
-  const {userId} = route.params;
+  // SafeAreaView 는 기기의 indicator 영역을 제외한 컨텐츠 영역 배치
   return (
     <SafeAreaView style={styles.container}>
-      <View>
-        <Text>{userId} 상세화면입니다.</Text>
-      </View>
+      <WebView
+        source={{uri: webViewUrl}} // 웹뷰에 보여줄 URL 주소
+        startInLoadingState={true} // 웹뷰가 로딩 인디케이터 표시
+        renderLoading={() => (
+          // 웹뷰 로딩 중일 때 표시될 로딩 인디케이터 컴포넌트
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#0000ff" />
+            {/* 로딩 스피너 컴포넌트 */}
+          </View>
+        )}
+        // 로딩 완료
+        onLoadEnd={() => {
+          console.log('로딩완료');
+          setTimeout(() => {
+            SplashScreen.hide();
+          }, 1000);
+        }}
+        style={styles.webview}
+      />
     </SafeAreaView>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000',
+  },
+  webview: {
+    flex: 1,
+  },
+  loadingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
 });
-
-export default DetailScreen;
+export default App;
 ```
 
-## 6. Tab Navigation
+## 4. apk 생성
+
+### 4.1. QR 생성하기
+
+- https://me-qr.com/ko/qr-code-generator/link
+
+### 4.2. 마켓에 등록하지 않은 상태로 외부인에게 앱파일을 전달하는 경우
 
 ```bash
-npm install @react-navigation/bottom-tabs@^6.x
+cd android
 ```
-
-### 6.1. 기본 테스트
-
-- App.tsx 수정
-
-```tsx
-import {NavigationContainer} from '@react-navigation/native';
-import React from 'react';
-import DetailScreen from './src/screens/DetailScreen';
-import HomeScreen from './src/screens/HomeScreen';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-
-const Tab = createBottomTabNavigator();
-
-const App = (): JSX.Element => {
-  return (
-    <NavigationContainer>
-      <Tab.Navigator>
-        <Tab.Screen name="Home" component={HomeScreen} />
-        <Tab.Screen name="Details" component={DetailScreen} />
-      </Tab.Navigator>
-    </NavigationContainer>
-  );
-};
-
-export default App;
-```
-
-### 6.2. title 옵션
-
-```tsx
-<Tab.Screen
-  name="Home"
-  component={HomeScreen}
-  options={{title: '홈 화면'}}
-/>
-<Tab.Screen
-  name="Details"
-  component={DetailScreen}
-  options={{title: '상세 화면'}}
-/>
-```
-
-### 6.3. headerStyle, headerTintColor
-
-```tsx
-<Tab.Screen
-  name="Home"
-  component={HomeScreen}
-  options={{
-    title: '홈 화면',
-    headerStyle: {backgroundColor: 'skyblue'},
-    headerTintColor: '#fff',
-  }}
-/>
-<Tab.Screen
-  name="Details"
-  component={DetailScreen}
-  options={{
-    title: '상세 화면',
-    headerStyle: {backgroundColor: 'hotpink'},
-    headerTintColor: '#fff',
-  }}
-/>
-```
-
-### 6.4. headerTitleAlign
-
-```tsx
-<Tab.Screen
-  name="Details"
-  component={DetailScreen}
-  options={{
-    title: '상세 화면',
-    headerStyle: {backgroundColor: 'hotpink'},
-    headerTintColor: '#fff',
-    headerTitleAlign: 'center',
-  }}
-/>
-```
-
-### 6.5. tabBarLabel
-
-- 탭 버튼에 출력되는 글자
-
-```tsx
-<Tab.Screen
-  name="Details"
-  component={DetailScreen}
-  options={{
-    title: '상세 화면',
-    headerStyle: {backgroundColor: 'pink'},
-    headerTintColor: '#fff',
-    headerTitleAlign: 'center',
-    tabBarLabel: '상세',
-  }}
-/>
-```
-
-### 6.6. tabBarIcon
 
 ```bash
-npm install react-native-vector-icons
-npm install -D @types/react-native-vector-icons
+./gradlew assembleRelease
 ```
 
-- `/android/app/build.gradle` 에 내용 추가 ( 경로 필수 확인)
+- apk 별도 생성 작업
+
+  - android/app/build/outputs/apk/release/app-release.apk 복사
+  - /test/ 붙여넣고
+  - /test/test.apk 로 변경
+
+- github push 후 QR 생성 및 배포
+
+### 4.3. App Deploy
+
+- https://velog.io/@mandoo1229/React-Native-Android-APK-생성
+- https://ssilook.tistory.com/entry/React-Native-RN-Android-Studio로-APK-추출하기
+- https://velog.io/@2hanbyeol1/RN-Android-앱-배포-1
+- https://velog.io/@dev_jiwon/React-Native-Release-APKAAB-추출하기
+
+## 5. 마켓 등록
+
+### 5.1. Deploy Android App
+
+- https://play.google.com/console
+- 안드로이드 개발자 등록은 1회 등록으로 지속됨(25$)
+  - 개발완료 후 바로 등록은 불가
+  - 12명의 테스터 모집, 14일 간 앱설치를 유지
+  - 이후 앱 등록이 가능함
+- ios 개발자는 매년 갱신(99$)
+
+### 5.2. 단계
+
+![Image](https://github.com/user-attachments/assets/46a1f8fb-18ff-4dd2-96ae-62e223347e5d)
+
+![Image](https://github.com/user-attachments/assets/78625fc6-f788-46a5-8a67-17580ff39f80)
+
+![Image](https://github.com/user-attachments/assets/5cd3c026-6f52-4679-b7c2-d49837504987)
+
+![Image](https://github.com/user-attachments/assets/c3a7e61a-7cd6-41c4-8b18-bc25fe954e21)
+
+### 5.3. 키 생성
+
+- https://reactnative.dev/docs/0.72/signed-apk-android
+- 터미널 실행(`CMD`)
+
+#### 5.3.1. JDK 경로 확인
+
+- 각 PC 마다 경로 설정이 다를 수 있다 ( JDK 경로 )
+- 윈도우 검색창 => `시스템 환경 변수 편집` => `환경 변수` => 아래 `시스템 변수` 에서 `JAVA_HOME` 항목 선택 => 해당 변수의 값(경로) 확인
+
+- 경로 확인 `C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot\`
+- 해당 경로의 bin 폴더로 이동
+
+- 아래 문장을 `윈도우 검색 > cmd` 창에 입력
+
+- `cd C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot\bin`
+
+```bash
+keytool -genkeypair -v -storetype PKCS12 -keystore my-upload-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000
+```
+
+```bash
+keytool -genkeypair -v -storetype PKCS12 -keystore myapp.keystore -alias myapp-alias -keyalg RSA -keysize 2048 -validity 10000
+```
+
+![Image](https://github.com/user-attachments/assets/56f5a4b8-45a6-4e1f-b313-81d7433c5c63)
+
+![Image](https://github.com/user-attachments/assets/8e1df14b-fb36-42f2-a60d-6dc5b0989538)
+
+- 생성된 `myapp.keystore` 파일을 `D:\students\tilapp\android\app` 폴더에 복사
+- `android/gradle.properties` 파일에 키 정보 추가
+
+```txt
+MYAPP_UPLOAD_STORE_FILE=myapp.keystore
+MYAPP_UPLOAD_KEY_ALIAS=myapp-alias
+MYAPP_UPLOAD_STORE_PASSWORD=123456
+MYAPP_UPLOAD_KEY_PASSWORD=123456
+```
+
+- 완성본
 
 ```java
-apply from: file ("../../node_modules/react-native-vector-icons/fonts.gradle")
+
 ```
 
-- 아이콘 목록 : https://oblador.github.io/react-native-vector-icons/
+- `android/app/build.gradle` 파일에 키 정보 추가
 
-```tsx
-import {NavigationContainer} from '@react-navigation/native';
-import React from 'react';
-import DetailScreen from './src/screens/DetailScreen';
-import HomeScreen from './src/screens/HomeScreen';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-
-const Tab = createBottomTabNavigator();
-const App = (): JSX.Element => {
-  return (
-    <NavigationContainer>
-      <Tab.Navigator>
-        <Tab.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{
-            title: '홈 화면',
-            headerStyle: {backgroundColor: 'skyblue'},
-            headerTintColor: '#fff',
-            tabBarLabel: '홈',
-            tabBarIcon: ({focused, color, size}) => {
-              let iconName = '';
-              iconName = focused ? 'home' : 'home-outline';
-              // 아이콘 반환
-              return <Ionicons name={iconName} size={size} color={color} />;
-            },
-          }}
-        />
-        <Tab.Screen
-          name="Details"
-          component={DetailScreen}
-          options={{
-            title: '상세 화면',
-            headerStyle: {backgroundColor: 'pink'},
-            headerTintColor: '#fff',
-            headerTitleAlign: 'center',
-            tabBarLabel: '상세',
-            tabBarIcon: ({focused, color, size}) => {
-              let iconName = '';
-              iconName = focused ? 'heart-circle' : 'heart-circle-outline';
-              // 아이콘 반환
-              return <Ionicons name={iconName} size={size} color={color} />;
-            },
-          }}
-        />
-      </Tab.Navigator>
-    </NavigationContainer>
-  );
-};
-
-export default App;
+```txt
+release {
+            if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
+                storeFile file(MYAPP_UPLOAD_STORE_FILE)
+                storePassword MYAPP_UPLOAD_STORE_PASSWORD
+                keyAlias MYAPP_UPLOAD_KEY_ALIAS
+                keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+            }
+        }
 ```
 
-### 6.7. tabBarActiveTintColor / tabBarInactiveTintColor
-
-- tabBarActiveTintColor : 버튼 활성화 시
-- tabBarInactiveTintColor : 버튼 비활성화 시
-
-```tsx
-<Tab.Screen
-  name="Details"
-  component={DetailScreen}
-  options={{
-    title: '상세 화면',
-    headerStyle: {backgroundColor: 'pink'},
-    headerTintColor: '#fff',
-    headerTitleAlign: 'center',
-    tabBarLabel: '상세',
-    tabBarIcon: ({focused, color, size}) => {
-      let iconName = '';
-      iconName = focused ? 'heart-circle' : 'heart-circle-outline';
-      // 아이콘 반환
-      return <Ionicons name={iconName} size={size} color={color} />;
-    },
-    tabBarActiveTintColor: 'blue',
-    tabBarInactiveTintColor: 'gray',
-  }}
-/>
+```txt
+signingConfig signingConfigs.release
 ```
 
-### 6.8. headerShown
-
-- 상단 타이틀 출력하지 않기
-
-```tsx
-<Tab.Screen
-  name="Home"
-  component={HomeScreen}
-  options={{
-    title: '홈 화면',
-    headerStyle: {backgroundColor: 'skyblue'},
-    headerTintColor: '#fff',
-    tabBarLabel: '홈',
-    tabBarIcon: ({focused, color, size}) => {
-      let iconName = '';
-      iconName = focused ? 'home' : 'home-outline';
-      // 아이콘 반환
-      return <Ionicons name={iconName} size={size} color={color} />;
-    },
-    tabBarActiveTintColor: 'blue',
-    tabBarInactiveTintColor: 'gray',
-    headerShown: false,
-  }}
-/>
+```txt
+def enableProguardInReleaseBuilds = true
 ```
 
-### 6.9. tabBarStyle
+```java
+apply plugin: "com.android.application"
+apply plugin: "com.facebook.react"
 
-```tsx
-<Tab.Screen
-  name="Home"
-  component={HomeScreen}
-  options={{
-    title: '홈 화면',
-    headerStyle: {backgroundColor: 'skyblue'},
-    headerTintColor: '#fff',
-    tabBarLabel: '홈',
-    tabBarIcon: ({focused, color, size}) => {
-      let iconName = '';
-      iconName = focused ? 'home' : 'home-outline';
-      // 아이콘 반환
-      return <Ionicons name={iconName} size={size} color={color} />;
-    },
-    tabBarActiveTintColor: 'blue',
-    tabBarInactiveTintColor: 'gray',
-    headerShown: false,
-    tabBarStyle: {
-      backgroundColor: 'skyblue',
-      height: 70,
-      paddingBottom: 5,
-    },
-  }}
-/>
-```
+/**
+ * This is the configuration block to customize your React Native Android app.
+ * By default you don't need to apply any configuration, just uncomment the lines you need.
+ */
+react {
+    /* Folders */
+    //   The root of your project, i.e. where "package.json" lives. Default is '..'
+    // root = file("../")
+    //   The folder where the react-native NPM package is. Default is ../node_modules/react-native
+    // reactNativeDir = file("../node_modules/react-native")
+    //   The folder where the react-native Codegen package is. Default is ../node_modules/@react-native/codegen
+    // codegenDir = file("../node_modules/@react-native/codegen")
+    //   The cli.js file which is the React Native CLI entrypoint. Default is ../node_modules/react-native/cli.js
+    // cliFile = file("../node_modules/react-native/cli.js")
 
-### 6.10. tabBarBadge
+    /* Variants */
+    //   The list of variants to that are debuggable. For those we're going to
+    //   skip the bundling of the JS bundle and the assets. By default is just 'debug'.
+    //   If you add flavors like lite, prod, etc. you'll have to list your debuggableVariants.
+    // debuggableVariants = ["liteDebug", "prodDebug"]
 
-- 탭바 메뉴 아이콘 우측 상단에 메세지 알림 등 출력
+    /* Bundling */
+    //   A list containing the node command and its flags. Default is just 'node'.
+    // nodeExecutableAndArgs = ["node"]
+    //
+    //   The command to run when bundling. By default is 'bundle'
+    // bundleCommand = "ram-bundle"
+    //
+    //   The path to the CLI configuration file. Default is empty.
+    // bundleConfig = file(../rn-cli.config.js)
+    //
+    //   The name of the generated asset file containing your JS bundle
+    // bundleAssetName = "MyApplication.android.bundle"
+    //
+    //   The entry file for bundle generation. Default is 'index.android.js' or 'index.js'
+    // entryFile = file("../js/MyApplication.android.js")
+    //
+    //   A list of extra flags to pass to the 'bundle' commands.
+    //   See https://github.com/react-native-community/cli/blob/main/docs/commands.md#bundle
+    // extraPackagerArgs = []
 
-```tsx
-<Tab.Screen
-  name="Details"
-  component={DetailScreen}
-  options={{
-    title: '상세 화면',
-    headerStyle: {backgroundColor: 'pink'},
-    headerTintColor: '#fff',
-    headerTitleAlign: 'center',
-    tabBarLabel: '상세',
-    tabBarIcon: ({focused, color, size}) => {
-      let iconName = '';
-      iconName = focused ? 'heart-circle' : 'heart-circle-outline';
-      // 아이콘 반환
-      return <Ionicons name={iconName} size={size} color={color} />;
-    },
-    tabBarActiveTintColor: 'blue',
-    tabBarInactiveTintColor: 'gray',
-    tabBarBadge: 3,
-  }}
-/>
-```
+    /* Hermes Commands */
+    //   The hermes compiler command to run. By default it is 'hermesc'
+    // hermesCommand = "$rootDir/my-custom-hermesc/bin/hermesc"
+    //
+    //   The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
+    // hermesFlags = ["-O", "-output-source-map"]
+}
 
-### 6.11. tabBarShowLabel
+/**
+ * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
+ */
+def enableProguardInReleaseBuilds = true
 
-- tabBar 의 아이콘만 보기
+/**
+ * The preferred build flavor of JavaScriptCore (JSC)
+ *
+ * For example, to use the international variant, you can use:
+ * `def jscFlavor = 'org.webkit:android-jsc-intl:+'`
+ *
+ * The international variant includes ICU i18n library and necessary data
+ * allowing to use e.g. `Date.toLocaleString` and `String.localeCompare` that
+ * give correct results when using with locales other than en-US. Note that
+ * this variant is about 6MiB larger per architecture than default.
+ */
+def jscFlavor = 'org.webkit:android-jsc:+'
 
-```tsx
-<Tab.Screen
-  name="Home"
-  component={HomeScreen}
-  options={{
-    title: '홈 화면',
-    headerStyle: {backgroundColor: 'skyblue'},
-    headerTintColor: '#fff',
-    tabBarLabel: '홈',
-    tabBarIcon: ({focused, color, size}) => {
-      let iconName = '';
-      iconName = focused ? 'home' : 'home-outline';
-      // 아이콘 반환
-      return <Ionicons name={iconName} size={size} color={color} />;
-    },
-    tabBarActiveTintColor: 'blue',
-    tabBarInactiveTintColor: 'gray',
-    headerShown: false,
-    tabBarStyle: {
-      backgroundColor: 'skyblue',
-      height: 70,
-      paddingBottom: 5,
-    },
-    tabBarShowLabel: false,
-  }}
-/>
-```
+android {
+    ndkVersion rootProject.ext.ndkVersion
 
-<br/>
+    compileSdkVersion rootProject.ext.compileSdkVersion
 
-## 7. Drawer Navigation
+    namespace "com.tilapp"
+    defaultConfig {
+        applicationId "com.tilapp"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+    }
+    signingConfigs {
+        release {
+            if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
+                storeFile file(MYAPP_UPLOAD_STORE_FILE)
+                storePassword MYAPP_UPLOAD_STORE_PASSWORD
+                keyAlias MYAPP_UPLOAD_KEY_ALIAS
+                keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+            }
+        }
+        // debug {
+        //     storeFile file('debug.keystore')
+        //     storePassword 'android'
+        //     keyAlias 'androiddebugkey'
+        //     keyPassword 'android'
+        // }
+    }
+    buildTypes {
+        // debug {
+        //     signingConfig signingConfigs.debug
+        // }
+        release {
+            // Caution! In production, you need to generate your own keystore file.
+            // see https://reactnative.dev/docs/signed-apk-android.
+            signingConfig signingConfigs.release
+            // signingConfig signingConfigs.debug
+            minifyEnabled enableProguardInReleaseBuilds
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+        }
+    }
+}
 
-- `babel.config.js` 내용 추가
+dependencies {
+    // The version of react-native is set by the React Native Gradle Plugin
+    implementation("com.facebook.react:react-android")
 
-```js
-module.exports = {
-  presets: ['module:metro-react-native-babel-preset'],
-  plugins: ['react-native-reanimated/plugin'], // 반드시 마지막 줄에!
-};
+    debugImplementation("com.facebook.flipper:flipper:${FLIPPER_VERSION}")
+    debugImplementation("com.facebook.flipper:flipper-network-plugin:${FLIPPER_VERSION}") {
+        exclude group:'com.squareup.okhttp3', module:'okhttp'
+    }
+
+    debugImplementation("com.facebook.flipper:flipper-fresco-plugin:${FLIPPER_VERSION}")
+    if (hermesEnabled.toBoolean()) {
+        implementation("com.facebook.react:hermes-android")
+    } else {
+        implementation jscFlavor
+    }
+}
+
+apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
+apply from: file ("../../node_modules/react-native-vector-icons/fonts.gradle") // add this line
 ```
 
 ```bash
-npm i react-native-reanimated@3.5.4
-npm install @react-navigation/drawer@6.6.9
+npx react-native build-android --mode=release
 ```
 
->
+- `android/app/build/outputs/bundle/release` 폴더에 배포 파일 생성
 
-- 디버깅 1. ( 문제 발생 시 )
-
-```bash
-cd android && ./gradlew clean && cd ..
-
-npx react-native run-android
-```
-
-- 디버깅 2. ( 문제 발생 시 )
-
-```bash
-# 1. 캐시 및 빌드 폴더 삭제
-rm -rf node_modules android/app/build android/.gradle
-
-# 2. 패키지 재설치
-npm install
-
-# 3. Metro 번들러 캐시 초기화
-npx react-native start --reset-cache
-```
-
-### 7.1. 옵션 모두 기본 정리
-
-```tsx
-import {createDrawerNavigator} from '@react-navigation/drawer';
-import {NavigationContainer} from '@react-navigation/native';
-import React from 'react';
-import DetailScreen from './src/screens/DetailScreen';
-import HomeScreen from './src/screens/HomeScreen';
-// 아이콘
-import Icon from 'react-native-vector-icons/Ionicons';
-
-const Drawer = createDrawerNavigator();
-
-const App = (): JSX.Element => {
-  return (
-    <NavigationContainer>
-      <Drawer.Navigator
-        initialRouteName="Home"
-        screenOptions={{
-          drawerType: 'front', // 메뉴 보여주는 옵션
-        }}>
-        <Drawer.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{
-            title: '홈',
-            drawerLabel: '나의 홈',
-            drawerIcon: ({color, size}) => (
-              <Icon name="person-outline" size={size} color={color} />
-            ),
-            drawerActiveTintColor: 'blue',
-            drawerInactiveTintColor: 'gray',
-            headerStyle: {
-              backgroundColor: 'skyblue',
-            },
-            headerTintColor: '#fff',
-            headerShown: true,
-          }}
-        />
-        <Drawer.Screen name="Details" component={DetailScreen} />
-      </Drawer.Navigator>
-    </NavigationContainer>
-  );
-};
-
-export default App;
-```
-
-<br/>
+![Image](https://github.com/user-attachments/assets/01c35af8-153d-4c1f-ae72-3e7cc26ba4ce)
